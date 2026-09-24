@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Which content page should you fix first? An explainable ML ranking for content refresh</title>
+  <meta name="description" content="FlyRank ML Internship capstone: an explainable logistic-regression ranking that tells a content team which declining page to review first. Precision@50 0.600 vs 0.540 on a grouped-by-client holdout.">
+  <style>
+    :root { --ink:#111827; --muted:#6b7280; --accent:#1d4ed8; --line:#e5e7eb; --bg:#ffffff; --soft:#f8fafc; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif; color:var(--ink); background:var(--bg); line-height:1.6; }
+    main { max-width: 820px; margin: 0 auto; padding: 40px 20px 80px; }
+    h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 6px; }
+    .subtitle { color: var(--muted); font-size: 1.05rem; margin: 0 0 24px; }
+    .tagline { display:inline-block; background:var(--soft); border:1px solid var(--line); color:var(--muted); font-size:.78rem; letter-spacing:.02em; padding:4px 10px; border-radius:999px; margin-bottom:18px; }
+    section { margin: 44px 0; }
+    h2 { font-size: 1.35rem; margin: 0 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--line); }
+    h3 { font-size: 1.05rem; margin: 20px 0 8px; }
+    p { margin: 10px 0; }
+    ul, ol { margin: 10px 0; padding-left: 22px; }
+    li { margin: 6px 0; }
+    table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: .95rem; }
+    th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; }
+    th { background: var(--soft); }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    code { background: var(--soft); border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:.88em; }
+    figure { margin: 18px 0; }
+    img, svg { max-width: 100%; height: auto; }
+    figcaption { font-size: .9rem; color: var(--muted); margin-top: 8px; }
+    .hero { background: var(--soft); border:1px solid var(--line); border-radius:12px; padding:20px; }
+    .callout { background:#eff6ff; border:1px solid #bfdbfe; border-left:4px solid var(--accent); border-radius:6px; padding:12px 16px; margin:14px 0; }
+    a { color: var(--accent); }
+    footer { margin-top: 60px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+    footer ul { margin: 8px 0; }
+  </style>
+</head>
+<body>
+<main>
+
+  <section class="tagline">FlyRank ML Internship · capstone · observed / measured / directional / decision-support</section>
+
+  <h1>Which content page should you fix first?</h1>
+  <p class="subtitle">An explainable machine-learning ranking that helps content teams prioritize potentially declining pages for human review.</p>
+
+  <!-- 1. ABSTRACT -->
+  <section id="abstract">
+    <h2>Abstract</h2>
+    <p>Search-ranked content succeeds, then quietly decays: rankings slip, clicks drop, and content teams usually notice too late. This project asks whether an explainable machine-learning model can prioritize, out of thousands of pages, which potentially declining page a human should review <strong>first</strong>. Using FlyRank's anonymized content-performance dataset — 30,000 pages across 32 pseudonymized clients over a 90-day window — each page is labeled from its observed trend (declining vs not), and target-derived fields are excluded from the model features. A logistic-regression ranking model measured <strong>Precision@50 of 0.600</strong> compared with <strong>0.540</strong> for the hand-written baseline rule on the same grouped-by-client holdout, an observed difference of <strong>+0.060</strong>. The result is published as decision support for human content review — measured, directional, and never a causal claim or an automated content-editing system.</p>
+  </section>
+
+  <!-- 2. INTRODUCTION / PROBLEM -->
+  <section id="problem">
+    <h2>Introduction — the real FlyRank problem</h2>
+    <p>FlyRank builds content as infrastructure: it researches, writes, and publishes content directly into a client's website, then watches search data and optimizes. The hard part is not writing good content once — it is noticing when that content quietly decays. Rankings slip, clicks drop, and most content teams notice too late, after traffic has already moved elsewhere.</p>
+    <p>The week-in, week-out decision this work supports is simple to state and hard to make well: <strong>out of thousands of pages, which one should a human fix first?</strong> That is a ranking problem on messy, real search data — exactly the pattern where a learned model can beat a fixed rule.</p>
+    <p>FlyRank's product already flags pages today: a health score, quick-win tags, and needs-attention flags. Those are hand-written <em>if-this-then-that</em> rules. They work, and they run in production — but rules run out where signals get many, tangled, and shifting, and no trained model has replaced them yet. This capstone sits in that gap.</p>
+    <p>It tests whether an explainable model can surface genuinely declining, high-opportunity pages earlier than the existing rule. Product flags are treated as <strong>the baseline to beat — never as model features</strong>. Client names, domains, URLs, and keywords appear nowhere in this public-safe analysis.</p>
+  </section>
+
+  <!-- 3. DATA -->
+  <section id="data">
+    <h2>Data</h2>
+    <p>The modeling dataset is the public-safe anonymized content-refresh release supplied with the internship repository: <strong>30,000 anonymized content pages × 44 columns</strong> across <strong>32 pseudonymized clients</strong>, with all metrics aggregated over a trailing 90-day window. It contains no client names, domains, URLs, titles, or private search queries.</p>
+    <ul>
+      <li><strong>Unit of analysis:</strong> one anonymized content page.</li>
+      <li><strong>Label:</strong> a page is declining when its observed <code>trend_direction</code> is <code>down</code> (16,262 of 30,000 pages, 54.2%).</li>
+      <li><strong>Excluded from features:</strong> <code>trend_direction</code> and <code>trend_pct</code> (label-derived — leakage), future-outcome fields, and client/content identifiers.</li>
+    </ul>
+    <p>Earlier warehouse work examined the gated March&nbsp;2026 release (~9.84&nbsp;M daily-performance rows) for the data contract; the capstone ranking model uses the supplied 30,000-page public-safe modeling dataset. Only anonymized, aggregated results are presented.</p>
+  </section>
+
+  <!-- 4. METHODOLOGY -->
+  <section id="methodology">
+    <h2>Methodology</h2>
+    <h3>Features (all knowable before the outcome)</h3>
+    <p>Seven observable signals: <code>impressions_90d</code>, <code>clicks_90d</code>, <code>ctr</code>, <code>avg_position</code>, <code>days_since_last_update</code>, <code>content_age_days</code>, <code>word_count</code>.</p>
+    <h3>Model</h3>
+    <p>A logistic-regression pipeline: median imputation for missing numerics → standardization → logistic regression (<code>max_iter=1000</code>, <code>random_state=42</code>). The model outputs a probability-like priority score used to rank pages.</p>
+    <h3>Baseline (the hand-written rule we are trying to beat)</h3>
+    <ul>
+      <li><strong>Stale signal:</strong> <code>days_since_last_update ≥ 180</code> with sufficient search visibility (<code>impressions_90d ≥ 500</code>).</li>
+      <li><strong>Low-CTR signal:</strong> <code>impressions_90d ≥ 500</code>, usable average position 1–20, and <code>ctr &lt; 0.5%</code>.</li>
+    </ul>
+    <h3>Validation design</h3>
+    <p>Grouped-by-client train/test split: ~80% of clients train, ~20% are held out (25 train / 7 test clients; 23,837 / 6,163 rows), with <strong>zero client overlap</strong> so the test set represents unseen clients. Same split, same target, same metric for model and baseline. This tests generalization to unseen clients — it is not a future-time holdout.</p>
+    <h3>Leakage checks</h3>
+    <p>Explicit feature-level audit confirmed no target-derived or future-outcome field is in the final feature set (a deliberate label-copy feature reproduces the target exactly — 1.0 match — and was removed).</p>
+  </section>
+
+  <!-- 5. RESULTS -->
+  <section id="results">
+    <h2>Results</h2>
+    <div class="callout"><strong>Headline:</strong> on the same grouped-by-client holdout, the logistic-regression model measured Precision@50 of <strong>0.600</strong> vs <strong>0.540</strong> for the hand-written baseline — an observed <strong>+0.060</strong>. The held-out declining rate was ≈0.51, so a random top-50 pick would land near 0.51.</div>
+    <table>
+      <thead><tr><th>Approach</th><th class="num">Precision@50</th></tr></thead>
+      <tbody>
+        <tr><td>Hand-written baseline rule</td><td class="num">0.540</td></tr>
+        <tr><td>Logistic regression model</td><td class="num">0.600</td></tr>
+        <tr><td><strong>Observed difference</strong></td><td class="num"><strong>+0.060</strong></td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="charts/model_vs_baseline_p50.svg" alt="Bar chart comparing Precision@50 for the baseline rule (0.540) and the logistic regression model (0.600) on the grouped-by-client holdout.">
+      <figcaption><strong>Takeaway:</strong> the learned model ranks a small review queue with higher measured precision than the current hand-written rule on the sampled holdout.</figcaption>
+    </figure>
+    <h3>What the model leans on</h3>
+    <table>
+      <thead><tr><th>Feature</th><th class="num">Std coefficient</th></tr></thead>
+      <tbody>
+        <tr><td>content_age_days</td><td class="num">−0.38</td></tr>
+        <tr><td>days_since_last_update</td><td class="num">+0.23</td></tr>
+        <tr><td>ctr</td><td class="num">−0.18</td></tr>
+        <tr><td>clicks_90d</td><td class="num">−0.17</td></tr>
+      </tbody>
+    </table>
+    <p class="subtitle">Coefficient signs describe associations in this dataset, not causation.</p>
+  </section>
+
+  <!-- 6. LIMITATIONS -->
+  <section id="limitations">
+    <h2>Limitations &amp; honest framing</h2>
+    <ol>
+      <li><strong>Observational data.</strong> The analysis shows associations; it does not establish that changing a page will improve its performance.</li>
+      <li><strong>Validation population.</strong> The client-holdout tests generalization to unseen clients, not a future time period.</li>
+      <li><strong>Modest lift.</strong> The +0.060 Precision@50 difference is measured on one validation design and should not be treated as a guaranteed future performance level.</li>
+      <li><strong>Label definition.</strong> The declining label follows the dataset's existing trend rule, not an independent causal definition of content quality.</li>
+      <li><strong>Ranking is not an action guarantee.</strong> A high score means "review this page earlier" — not "this page needs a specific change."</li>
+      <li><strong>Human judgment remains necessary.</strong> Quality, search intent, business value, and technical context are not fully captured by seven features.</li>
+    </ol>
+    <p>This work is <strong>decision support for human review</strong>, never an autonomous content-optimization system and never a claim of "predicting Google's algorithm."</p>
+  </section>
+
+  <!-- 7. RECOMMENDATIONS -->
+  <section id="recommendations">
+    <h2>Ranked recommendations</h2>
+    <p>The action playbook turns the model ranking into a human-review queue with one transparent reason code per page. The queue answers: <em>which pages should a human inspect first, and what observable signal explains that priority?</em></p>
+    <ol>
+      <li><strong>Priority 1 — <code>STALE_REFRESH</code>:</strong> high model priority + stale-content signal. Review for freshness, outdated information, and intent fit.</li>
+      <li><strong>Priority 2 — <code>LOW_CTR_POSITION</code>:</strong> sufficient impressions, position 1–20, CTR below 0.5%. Review title/snippet and search-intent alignment.</li>
+      <li><strong>Priority 3 — <code>STALE_AND_LOW_CTR</code>:</strong> both signals present; review freshness and presentation together.</li>
+      <li><strong>Priority 4 — <code>MONITOR</code>:</strong> no action signal; no immediate content change.</li>
+    </ol>
+    <table>
+      <thead><tr><th>Reason code</th><th class="num">Pages</th><th class="num">Share</th></tr></thead>
+      <tbody>
+        <tr><td>MONITOR</td><td class="num">20,077</td><td class="num">66.9%</td></tr>
+        <tr><td>LOW_CTR_POSITION</td><td class="num">9,749</td><td class="num">32.5%</td></tr>
+        <tr><td>STALE_REFRESH</td><td class="num">164</td><td class="num">0.55%</td></tr>
+        <tr><td>STALE_AND_LOW_CTR</td><td class="num">10</td><td class="num">0.03%</td></tr>
+      </tbody>
+    </table>
+    <p>Every page in the queue requires human review before any action. The system should never automatically publish, rewrite, delete, or redirect content; it should never use client identifiers as features, and no future-outcome field ever justifies a current action.</p>
+  </section>
+
+  <!-- 8. REPRODUCIBILITY -->
+  <section id="reproducibility">
+    <h2>Reproducibility</h2>
+    <p>Everything reruns from the project repository with a fixed <code>random_state=42</code>. Notebooks, in order:</p>
+    <ul>
+      <li><a href="https://github.com/malikasadnadir-max/flyrank-ml-internship/blob/main/work/notebooks/w02_ml_task_framing.ipynb">w02 — task framing</a></li>
+      <li><a href="https://github.com/malikasadnadir-max/flyrank-ml-internship/blob/main/work/notebooks/w03_data_contract.ipynb">w03 — data contract</a></li>
+      <li><a href="https://github.com/malikasadnadir-max/flyrank-ml-internship/blob/main/work/notebooks/w04_baseline_score.ipynb">w04 — baseline score</a></li>
+      <li><a href="https://github.com/malikasadnadir-max/flyrank-ml-internship/blob/main/work/notebooks/w05_model.ipynb">w05 — model</a></li>
+      <li><a href="https://github.com/malikasadnadir-max/flyrank-ml-internship/blob/main/work/notebooks/w06_validation_audit.ipynb">w06 — validation audit</a></li>
+      <li><a href="https://github.com/malikasadnadir-max/flyrank-ml-internship/blob/main/work/notebooks/w07_action_playbook.ipynb">w07 — action playbook</a></li>
+      <li><a href="https://github.com/malikasadnadir-max/flyrank-ml-internship/blob/main/work/notebooks/capstone.ipynb">capstone — this paper's source notebook</a></li>
+    </ul>
+    <p>The capstone notebook is the source of every number on this page: it builds the label, runs the grouped-by-client split, trains the model, compares it with the baseline, and exports the ranked queue and metrics.</p>
+  </section>
+
+  <!-- 9. ACKNOWLEDGMENTS -->
+  <section id="acknowledgments">
+    <h2>Acknowledgments &amp; data credit</h2>
+    <p>This project was completed as part of the <a href="https://flyrank.ai">FlyRank</a> ML Internship, using the internship's anonymized content-performance dataset under its data-use terms. Data credit: <a href="https://flyrank.ai">FlyRank</a> (anonymized internship release; full pseudonymized warehouse at <a href="https://huggingface.co/datasets/FlyRank/internship-warehouse">FlyRank/internship-warehouse</a>, gated).</p>
+  </section>
+
+  <footer>
+    <p>All claims on this page are <strong>observed / measured / directional / decision-support</strong>. No client names, domains, URLs, or private queries are included.</p>
+    <ul>
+      <li>Source repo: <a href="https://github.com/malikasadnadir-max/flyrank-ml-internship">github.com/malikasadnadir-max/flyrank-ml-internship</a></li>
+    </ul>
+  </footer>
+
+</main>
+</body>
+</html>

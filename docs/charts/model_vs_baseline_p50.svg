@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-label="Bar chart: model and baseline Precision@50 on the grouped-by-client holdout">
+  <style>
+    text { font-family: ui-sans-serif, system-ui, Arial, sans-serif; }
+    .axis { font-size: 12px; fill: #555; }
+    .tick { stroke: #ddd; stroke-width: 1; }
+    .bar-label { font-size: 14px; font-weight: 700; }
+    .title { font-size: 16px; font-weight: 700; fill: #111; }
+  </style>
+
+  <text x="320" y="28" text-anchor="middle" class="title">Precision@50 on the grouped-by-client holdout</text>
+  <text x="320" y="408" text-anchor="middle" class="axis">—</text>
+
+  <!-- plot area: left 70, right 620, top 50, bottom 300; y range 0.0–0.7 -->
+  <!-- y(y)px = 300 - (v/0.7) * 250 -->
+
+  <!-- gridlines + labels -->
+  <g class="axis">
+    <line x1="70" y1="300" x2="70" y2="50" stroke="#999" stroke-width="1"/>
+    <line x1="70" y1="300" x2="620" y2="300" stroke="#999" stroke-width="1"/>
+  </g>
+  <g class="axis" text-anchor="end">
+    <line x1="70" y1="300" x2="70" y2="300" class="tick"/><text x="62" y="304">0.0</text>
+    <line x1="70" y1="264.3" x2="620" y2="264.3" class="tick"/><text x="62" y="268">0.1</text>
+    <line x1="70" y1="228.6" x2="620" y2="228.6" class="tick"/><text x="62" y="232">0.2</text>
+    <line x1="70" y1="192.9" x2="620" y2="192.9" class="tick"/><text x="62" y="196">0.3</text>
+    <line x1="70" y1="157.1" x2="620" y2="157.1" class="tick"/><text x="62" y="161">0.4</text>
+    <line x1="70" y1="121.4" x2="620" y2="121.4" class="tick"/><text x="62" y="125">0.5</text>
+    <line x1="70" y1="85.7" x2="620" y2="85.7" class="tick"/><text x="62" y="89">0.6</text>
+    <line x1="70" y1="50" x2="620" y2="50" class="tick"/><text x="62" y="54">0.7</text>
+  </g>
+
+  <!-- held-out base rate reference line (≈0.511) -->
+  <line x1="70" y1="117.5" x2="620" y2="117.5" stroke="#e11d48" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="616" y="111" text-anchor="end" font-size="11" fill="#e11d48">held-out base rate ≈ 0.51</text>
+
+  <!-- Baseline 0.540 : y = 300 - (0.540/0.7)*250 = 107.1 -->
+  <rect x="130" y="107.1" width="90" height="192.9" rx="3" fill="#9ca3af"/>
+  <text x="175" y="96" text-anchor="middle" class="bar-label" fill="#4b5563">0.540</text>
+  <text x="175" y="330" text-anchor="middle" class="axis">Hand-written baseline rule</text>
+
+  <!-- Model 0.600 : y = 300 - (0.600/0.7)*250 = 85.7 -->
+  <rect x="330" y="85.7" width="90" height="214.3" rx="3" fill="#2563eb"/>
+  <text x="375" y="74" text-anchor="middle" class="bar-label" fill="#1d4ed8">0.600</text>
+  <text x="375" y="330" text-anchor="middle" class="axis">Logistic regression</text>
+
+  <text x="320" y="352" text-anchor="middle" font-size="12" fill="#111827">Observed difference on the same holdout: 0.600 − 0.540 = <tspan font-weight="700">+0.060</tspan></text>
+</svg>
